@@ -8,9 +8,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	checker "github.com/zinfra/srv-announcer/checker"
 	config "github.com/zinfra/srv-announcer/config"
 	route53 "github.com/zinfra/srv-announcer/dns/route53"
-	checker "github.com/zinfra/srv-announcer/checker"
 )
 
 func main() {
