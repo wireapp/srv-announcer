@@ -28,6 +28,12 @@ func main() {
 	app.Usage = "Sidecar managing DNS records in an SRV record set (RFC2782), a poormans alternative to proper service discovery"
 
 	app.Flags = []cli.Flag{
+		&cli.BoolFlag{
+			Name:        "dry-run",
+			Usage:       "Don't actually update DNS, only log what would be done",
+			EnvVars:     []string{"SRV_ANNOUNCER_DRY_RUN"},
+			Destination: &config.DryRun,
+		},
 		&cli.StringFlag{
 			Name:        "zone-name",
 			Usage:       "Name of the Route53 Zone the records to manage are in",
@@ -123,7 +129,7 @@ func main() {
 		}
 		zoneID := aws.StringValue(hostedZone.Id)
 
-		srvRecordManager := route53.NewSRVManager(r53, zoneID, config.SRVRecordName, config.TTL)
+		srvRecordManager := route53.NewSRVManager(r53, zoneID, config.SRVRecordName, config.TTL, config.DryRun)
 
 		return checker.Run(&config, srvRecordManager)
 	}

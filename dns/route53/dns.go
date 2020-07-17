@@ -17,18 +17,20 @@ type SRVManager struct {
 	hostedZoneID string
 	recordName   string
 	ttl          uint16
+	dryRun       bool
 }
 
 // ensure SRVManager implements dns.ISRVManager
 var _ dns.ISRVManager = &SRVManager{}
 
 // NewSRVManager initializes an SRV Manager by its zone ID and record name
-func NewSRVManager(client *Client, hostedZoneID string, recordName string, ttl uint16) *SRVManager {
+func NewSRVManager(client *Client, hostedZoneID string, recordName string, ttl uint16, dryRun bool) *SRVManager {
 	return &SRVManager{
 		client:       client,
 		hostedZoneID: hostedZoneID,
 		recordName:   recordName,
 		ttl:          ttl,
+		dryRun:       dryRun,
 	}
 }
 
@@ -67,12 +69,14 @@ func (s *SRVManager) edit(add bool, srv *net.SRV) error {
 			},
 		}
 
-		log.Debugf("would now change records as following: %+v", recordSetInput)
-
-		// _, err := s.client.Service.ChangeResourceRecordSets(recordSetInput)
-		// if err != nil {
-		// 	return err
-		// }
+		if s.dryRun {
+			log.Debugf("would now change records as following: %+v", recordSetInput)
+		} else {
+			_, err := s.client.Service.ChangeResourceRecordSets(recordSetInput)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

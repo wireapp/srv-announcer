@@ -11,6 +11,7 @@ COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
+   --dry-run                    Don't actually update DNS, only log what would be done (default: false) [$SRV_ANNOUNCER_DRY_RUN]
    --zone-name value            Name of the Route53 Zone the records to manage are in [$SRV_ANNOUNCER_ZONE_NAME]
    --srv-record-name value      RFC2783 Name (_service._proto.name) [$SRV_ANNOUNCER_SRV_RECORD_NAME]
    --srv-record-ttl value       TTL of the RFC2783 SRV Record Set in seconds (default: 60) [$SRV_ANNOUNCER_SRV_RECORD_TTL]
