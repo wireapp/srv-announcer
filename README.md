@@ -1,5 +1,14 @@
 # srv-announcer
 
+## Building
+This is a fairly straightforward Go application.
+
+ - Obtain a recent Go version.
+   Look at `.github/workflows/ci.yml` for the one used in CI.
+ - run `go test ./...` for the tests
+ - run `go build` to build a `./srv-announcer` static binary
+
+## Usage
 ```
 NAME:
    srv-announcer - Sidecar managing DNS records in an SRV record set (RFC2782), a poormans alternative to proper service discovery
