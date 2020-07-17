@@ -2,11 +2,12 @@ package route53
 
 import (
 	"fmt"
+	"net"
+
 	"github.com/aws/aws-sdk-go/aws"
 	route53Client "github.com/aws/aws-sdk-go/service/route53"
 	log "github.com/sirupsen/logrus"
 	dns "github.com/zinfra/srv-announcer/dns"
-	"net"
 )
 
 // addDotSuffixIfNeeded appends a dot to an existing record, in case it's not there yet.
