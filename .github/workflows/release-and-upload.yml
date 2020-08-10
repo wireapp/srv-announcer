@@ -1,0 +1,74 @@
+name: 'Creating a releasing with assets'
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release-and-upload:
+    name: 'Release & upload'
+    runs-on: ubuntu-18.04
+    steps:
+
+      # NOTE: atm only the full repository path is provided (e.g. user/myrepo) and also just full git refspec;
+      #       the expression syntax currently does not provides any function to extract sub-strings; for now
+      #       the workaround is to set variables through a run task
+      # DOCS: https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
+      # DOCS: https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#functions
+      #
+      - id: params
+        run: |
+          echo ::set-env name=PROJECT_NAME::${GITHUB_REPOSITORY#*/}
+          echo ::set-env name=TAG_NAME::${GITHUB_REF#refs/tags/}
+
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.14.6"
+      - run: go test ./...
+      - run: CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' .
+      - run: |
+          tar -zcvf ${PROJECT_NAME}_${TAG_NAME}_linux-amd64.tar.gz \
+              ./${PROJECT_NAME} \
+              ./README.md
+          openssl dgst -sha256 ${PROJECT_NAME}_${TAG_NAME}_linux-amd64.tar.gz \
+          | awk '{ print $ 2 }' > ${PROJECT_NAME}_${TAG_NAME}_linux-amd64.sha256
+
+      - uses: actions/create-release@v1
+        name: 'Creating release'
+        id: create-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          release_name: ${{ env.TAG_NAME }}
+          draft: false
+          prerelease: false
+
+      - uses: actions/upload-release-asset@v1
+        name: 'Uploading artifact'
+        id: upload-artifact
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./${{ env.PROJECT_NAME }}_${{ env.TAG_NAME }}_linux-amd64.tar.gz
+          asset_name: ${{ env.PROJECT_NAME }}_${{ env.TAG_NAME }}_linux-amd64.tar.gz
+          asset_content_type: application//tar+gzip
+
+      - uses: actions/upload-release-asset@v1
+        name: 'Uploading checksum'
+        id: upload-checksum
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./${{ env.PROJECT_NAME }}_${{ env.TAG_NAME }}_linux-amd64.sha256
+          asset_name: ${{ env.PROJECT_NAME }}_${{ env.TAG_NAME }}_linux-amd64.sha256
+          asset_content_type: text/plain
