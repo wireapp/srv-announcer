@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -130,6 +132,16 @@ func main() {
 		zoneID := aws.StringValue(hostedZone.Id)
 
 		srvRecordManager := route53.NewSRVManager(r53, zoneID, config.SRVRecordName, config.TTL, config.DryRun)
+
+		// signal handler
+		c := make(chan os.Signal)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		go func() {
+			<-c
+			log.Info("Interrupt handler called, removing announcement")
+			srvRecordManager.Remove(&config.SRVRecord)
+			os.Exit(0)
+		}()
 
 		return checker.Run(&config, srvRecordManager)
 	}
