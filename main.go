@@ -106,7 +106,7 @@ func main() {
 		},
 	}
 
-	app.Action = func(c *cli.Context) error {
+	app.Action = func(ctx *cli.Context) error {
 		// there's no uint16flag, so scan into uint and convert here.
 		config.TTL = uint16(TTL)
 		config.SRVRecord.Port = uint16(srvPort)
@@ -122,7 +122,7 @@ func main() {
 		// initialize route53
 		r53 := route53.NewClient()
 
-		//lookup zone
+		// lookup zone
 		hostedZone, err := r53.GetZoneByName(config.ZoneName)
 		if err != nil {
 			return err
