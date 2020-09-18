@@ -36,7 +36,7 @@ func Run(config *config.Config, srvManager dns.ISRVManager) error {
 	time.Sleep(t.Jitter.Jitter(config.CheckInterval / 10))
 
 	for range t.C {
-		var err error;
+		var err error
 		if tcpReachable(config.CheckTarget, config.CheckTimeout) {
 			err = srvManager.Add(&config.SRVRecord)
 		} else {
