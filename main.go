@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	checker "github.com/zinfra/srv-announcer/checker"
+	tcpHealthcheck "github.com/zinfra/srv-announcer/checker/healthchecks/tcp"
 	config "github.com/zinfra/srv-announcer/config"
 	route53 "github.com/zinfra/srv-announcer/dns/route53"
 )
@@ -133,7 +134,7 @@ func main() {
 
 		srvRecordManager := route53.NewSRVManager(r53, zoneID, config.SRVRecordName, config.TTL, config.DryRun)
 
-		tcpHealthcheck := checker.NewTCPHealthcheck(config.CheckTarget, config.CheckTimeout, config.CheckInterval)
+		tcpHealthcheck := tcpHealthcheck.NewHealthcheck(config.CheckTarget, config.CheckTimeout, config.CheckInterval)
 
 		return checker.Run(ctx.Context, tcpHealthcheck, config.SRVRecord, srvRecordManager)
 	}

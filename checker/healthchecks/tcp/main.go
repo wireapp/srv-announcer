@@ -1,4 +1,4 @@
-package checker
+package tcp
 
 import (
 	"context"
@@ -7,22 +7,24 @@ import (
 
 	"github.com/lthibault/jitterbug"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/zinfra/srv-announcer/checker/healthchecks"
 )
 
 // ensure TCPHealthcheck implements IHealthcheck
-var _ IHealthcheck = &TCPHealthcheck{}
+var _ healthchecks.IHealthcheck = &Healthcheck{}
 
-// TCPHealthcheck checks whether it's able to connect to a given target
+// Healthcheck checks whether it's able to connect to a given target
 // via TCP
-type TCPHealthcheck struct {
+type Healthcheck struct {
 	target         string
 	connectTimeout time.Duration
 	checkInterval  time.Duration
 }
 
-// NewTCPHealthcheck creates a new TCPHealthcheck
-func NewTCPHealthcheck(target string, connectTimeout time.Duration, checkInterval time.Duration) *TCPHealthcheck {
-	return &TCPHealthcheck{
+// NewHealthcheck creates a new Healthcheck
+func NewHealthcheck(target string, connectTimeout time.Duration, checkInterval time.Duration) *Healthcheck {
+	return &Healthcheck{
 		target:         target,
 		connectTimeout: connectTimeout,
 		checkInterval:  checkInterval,
@@ -31,7 +33,7 @@ func NewTCPHealthcheck(target string, connectTimeout time.Duration, checkInterva
 
 // Run regularily tries to connect to the target via TCP,
 // sends true if it was able to, false otherwise
-func (hc *TCPHealthcheck) Run(ctx context.Context, healthyChan chan<- bool) {
+func (hc *Healthcheck) Run(ctx context.Context, healthyChan chan<- bool) {
 	// jitter around a 10th of the configured interval
 	t := jitterbug.New(hc.checkInterval, &jitterbug.Norm{Stdev: hc.checkInterval / 10})
 

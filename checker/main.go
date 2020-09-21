@@ -6,19 +6,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	dns "github.com/zinfra/srv-announcer/dns"
+
+	"github.com/zinfra/srv-announcer/checker/healthchecks"
 )
 
-// IHealthcheck describes the basic healthchecker interface
-type IHealthcheck interface {
-	// Run will run the healthchecker-specific check
-	// in healthchecker-specific intervals.
-	// They will regularily push their health status
-	// to the healthyChan.
-	Run(ctx context.Context, healthyChan chan<- bool)
-}
-
 // Run runs a healthcheck and updates the SRV record whenever its status changes
-func Run(ctx context.Context, healthcheck IHealthcheck, srvRecord *net.SRV, srvManager dns.ISRVManager) error {
+func Run(ctx context.Context, healthcheck healthchecks.IHealthcheck, srvRecord *net.SRV, srvManager dns.ISRVManager) error {
 	var err error
 	var healthyC chan bool
 
