@@ -11,7 +11,7 @@ type Config struct {
 	ZoneName      string
 	SRVRecordName string
 	TTL           uint16
-	SRVRecord     net.SRV
+	SRVRecord     *net.SRV
 	CheckTarget   string
 	CheckInterval time.Duration
 	CheckTimeout  time.Duration

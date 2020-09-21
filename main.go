@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"time"
 
@@ -20,6 +21,7 @@ func main() {
 	log.SetLevel(log.DebugLevel)
 
 	var config config.Config
+	config.SRVRecord = &net.SRV{}
 	var checkTarget string
 	var TTL, srvPort, srvPriority, srvWeight uint
 
@@ -131,7 +133,9 @@ func main() {
 
 		srvRecordManager := route53.NewSRVManager(r53, zoneID, config.SRVRecordName, config.TTL, config.DryRun)
 
-		return checker.Run(ctx.Context, &config, srvRecordManager)
+		tcpHealthcheck := checker.NewTCPHealthcheck(config.CheckTarget, config.CheckTimeout, config.CheckInterval)
+
+		return checker.Run(ctx.Context, tcpHealthcheck, config.SRVRecord, srvRecordManager)
 	}
 
 	err := app.Run(os.Args)

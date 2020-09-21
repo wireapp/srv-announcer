@@ -2,9 +2,9 @@ package checker
 
 import (
 	"context"
+	"net"
 
 	log "github.com/sirupsen/logrus"
-	config "github.com/zinfra/srv-announcer/config"
 	dns "github.com/zinfra/srv-announcer/dns"
 )
 
@@ -17,44 +17,33 @@ type IHealthcheck interface {
 	Run(ctx context.Context, healthyChan chan<- bool)
 }
 
-// Run runs the healthchecks and updates the SRV record
-func Run(ctx context.Context, config *config.Config, srvManager dns.ISRVManager) error {
+// Run runs a healthcheck and updates the SRV record whenever its status changes
+func Run(ctx context.Context, healthcheck IHealthcheck, srvRecord *net.SRV, srvManager dns.ISRVManager) error {
 	var err error
+	var healthyC chan bool
 
-	// start a TCP Health checker
-	tcpHc := NewTCPHealthcheck(config.CheckTarget, config.CheckTimeout, config.CheckInterval)
-	tcpHcC := make(chan bool, 1)
-	go tcpHc.Run(ctx, tcpHcC)
+	// initialize the healthcheck
+	healthyC = make(chan bool, 1)
+	go healthcheck.Run(ctx, healthyC)
 
 	for {
 		select {
 		case <-ctx.Done():
-			srvManager.Remove(&config.SRVRecord)
+			srvManager.Remove(srvRecord)
 			return nil
-		case isReachable := <-tcpHcC:
+		case isReachable := <-healthyC:
 			log.Infof("got data on healthyC: %t", isReachable)
 			if isReachable {
-				err = srvManager.Add(&config.SRVRecord)
+				err = srvManager.Add(srvRecord)
 			} else {
-				err = srvManager.Remove(&config.SRVRecord)
+				err = srvManager.Remove(srvRecord)
 			}
 			if err != nil {
 				// only log the error here, don't exit the check loop.
 				// It might be a networking blip - we usually want to
 				// keep doing health checks.
 				log.Errorf("%s", err.Error())
-					err = srvManager.Add(srvRecord)
-				} else {
-					err = srvManager.Remove(srvRecord)
-				}
-				if err != nil {
-					// only log the error here, don't exit the check loop.
-					// It might be a networking blip - we usually want to
-					// keep doing health checks.
-					log.Errorf("%s", err.Error())
-				}
 			}
 		}
 	}
-	return nil
 }
