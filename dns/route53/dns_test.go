@@ -17,13 +17,13 @@ func TestEditResourceRecords(t *testing.T) {
 		Priority: 10,
 		Weight:   20,
 		Port:     4242,
-		Target:   "foobar.example.com",
+		Target:   "foobar.example.com.",
 	}
 	dummySrv2 := &net.SRV{
 		Priority: 11,
 		Weight:   21,
 		Port:     4243,
-		Target:   "foobaz.example.com",
+		Target:   "foobaz.example.com.",
 	}
 
 	rr := []*route53Client.ResourceRecord{}
@@ -31,7 +31,7 @@ func TestEditResourceRecords(t *testing.T) {
 
 	assert.Len(t, newRr, 1, "New RRs should contain one element")
 	assert.Equal(t, newRr, []*route53Client.ResourceRecord{{
-		Value: aws.String("10 20 4242 foobar.example.com"),
+		Value: aws.String("10 20 4242 foobar.example.com."),
 	}})
 	rr = newRr
 
@@ -54,7 +54,7 @@ func TestEditResourceRecords(t *testing.T) {
 	assert.Equal(t, *rr[0], *newRr[0], "The existing record shouldn't get touched")
 	assert.Equal(t, *rr[1], *newRr[1], "The existing record shouldn't get touched")
 	assert.Equal(t, &route53Client.ResourceRecord{
-		Value: aws.String("11 21 4243 foobaz.example.com"),
+		Value: aws.String("11 21 4243 foobaz.example.com."),
 	}, newRr[2])
 	rr = newRr
 
