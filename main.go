@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -81,14 +82,14 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:        "srv-record-target",
-			Usage:       "Target of the RFC2782 SRV Record. Usualy something resembling your hostname.",
+			Usage:       "Target of the RFC2782 SRV Record. Usually something resembling your hostname, ending with a dot",
 			EnvVars:     []string{"SRV_ANNOUNCER_SRV_RECORD_TARGET"},
 			Destination: &config.SRVRecord.Target,
 			Required:    true,
 		},
 		&cli.StringFlag{
 			Name:        "check-target",
-			Usage:       "hostname:port to check. Will be $srv-record-target:$srv-record-port if unspecified",
+			Usage:       "hostname:port to check. Will derive from $srv-record-target and $srv-record-port if unspecified",
 			EnvVars:     []string{"SRV_ANNOUNCER_CHECK_TARGET"},
 			Destination: &checkTarget,
 			Value:       "",
@@ -116,9 +117,15 @@ func main() {
 		config.SRVRecord.Priority = uint16(srvPriority)
 		config.SRVRecord.Weight = uint16(srvWeight)
 
+		if config.SRVRecord.Target[len(config.SRVRecord.Target)-1] == '.' {
+			log.Warnf("The target of the RFC2782 SRV Record doesn't end with a dot, " +
+				"which is probably not what you want. Continuing anyway.")
+		}
+
 		// fill checkTarget from SRVRecord.Target and SRVRecord.Port if it's not set
 		if checkTarget == "" {
-			checkTarget = fmt.Sprintf("%s:%d", config.SRVRecord.Target, srvPort)
+			checkTarget = fmt.Sprintf("%s:%d", strings.TrimRight(config.SRVRecord.Target, "."), srvPort)
+			log.Infof("Check target %s derived from $srv-record-target and $srv-record-port", checkTarget)
 		}
 		config.CheckTarget = checkTarget
 
