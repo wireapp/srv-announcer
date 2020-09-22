@@ -81,7 +81,7 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:        "srv-record-target",
-			Usage:       "Target of the RFC2782 SRV Record. Usualy something resembling your hostname.",
+			Usage:       "Target of the RFC2782 SRV Record. Usually something resembling your hostname.",
 			EnvVars:     []string{"SRV_ANNOUNCER_SRV_RECORD_TARGET"},
 			Destination: &config.SRVRecord.Target,
 			Required:    true,
