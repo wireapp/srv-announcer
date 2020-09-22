@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	checker "github.com/zinfra/srv-announcer/checker"
+	tcpHealthcheck "github.com/zinfra/srv-announcer/checker/healthchecks/tcp"
 	config "github.com/zinfra/srv-announcer/config"
 	route53 "github.com/zinfra/srv-announcer/dns/route53"
 )
@@ -20,6 +22,7 @@ func main() {
 	log.SetLevel(log.DebugLevel)
 
 	var config config.Config
+	config.SRVRecord = &net.SRV{}
 	var checkTarget string
 	var TTL, srvPort, srvPriority, srvWeight uint
 
@@ -106,7 +109,7 @@ func main() {
 		},
 	}
 
-	app.Action = func(c *cli.Context) error {
+	app.Action = func(ctx *cli.Context) error {
 		// there's no uint16flag, so scan into uint and convert here.
 		config.TTL = uint16(TTL)
 		config.SRVRecord.Port = uint16(srvPort)
@@ -131,7 +134,9 @@ func main() {
 
 		srvRecordManager := route53.NewSRVManager(r53, zoneID, config.SRVRecordName, config.TTL, config.DryRun)
 
-		return checker.Run(&config, srvRecordManager)
+		tcpHealthcheck := tcpHealthcheck.NewHealthcheck(config.CheckTarget, config.CheckTimeout, config.CheckInterval)
+
+		return checker.Run(ctx.Context, tcpHealthcheck, config.SRVRecord, srvRecordManager)
 	}
 
 	err := app.Run(os.Args)
