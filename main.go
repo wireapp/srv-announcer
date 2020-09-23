@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -146,7 +149,19 @@ func main() {
 		return checker.Run(ctx.Context, tcpHealthcheck, config.SRVRecord, srvRecordManager)
 	}
 
-	err := app.Run(os.Args)
+	// setup context
+	ctx, cancelCtx := context.WithCancel(context.Background())
+
+	// setup close handler
+	interruptC := make(chan os.Signal)
+	signal.Notify(interruptC, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-interruptC
+		cancelCtx()
+	}()
+
+	err := app.RunContext(ctx, os.Args)
+
 	if err != nil {
 		log.Fatal(err)
 	}
