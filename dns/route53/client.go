@@ -9,9 +9,17 @@ import (
 	route53Client "github.com/aws/aws-sdk-go/service/route53"
 )
 
+// r53 is the minimal interface to the route 53 client used for client mocking
+// in unit testing
+type r53 interface {
+	ChangeResourceRecordSets(input *route53Client.ChangeResourceRecordSetsInput) (*route53Client.ChangeResourceRecordSetsOutput, error)
+	ListResourceRecordSets(input *route53Client.ListResourceRecordSetsInput) (*route53Client.ListResourceRecordSetsOutput, error)
+	ListHostedZonesByName(input *route53Client.ListHostedZonesByNameInput) (*route53Client.ListHostedZonesByNameOutput, error)
+}
+
 // Client wraps the AWS Route53 service
 type Client struct {
-	Service *route53Client.Route53
+	Service r53
 }
 
 // NewClient constructs a new Service, wrapping a aws route53 client under the hood.
