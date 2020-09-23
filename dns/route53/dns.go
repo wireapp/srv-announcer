@@ -33,28 +33,46 @@ func NewSRVManager(client *Client, hostedZoneID string, recordName string, ttl u
 // edit provides both add and removal capabilities
 func (s *SRVManager) edit(add bool, srv *net.SRV) error {
 	log.Infof("Looking up SRV resource record set for %s", s.recordName)
-	resourceRecordSet, err := s.client.GetResourceRecordSetByName(s.hostedZoneID, s.recordName, "SRV")
+	currentResourceRecordSet, err := s.client.GetResourceRecordSetByName(s.hostedZoneID, s.recordName, "SRV")
 	if err != nil {
 		return err
 	}
 
-	if resourceRecordSet == nil {
-		log.Infof("Resource Record set for %s didn't exist, will create", s.recordName)
-		resourceRecordSet = &route53Client.ResourceRecordSet{
+	var currentResourceRecords []*route53Client.ResourceRecord
+
+	if currentResourceRecordSet == nil {
+		log.Infof("Resource Record set for %s doesn't exist", s.recordName)
+		currentResourceRecords = []*route53Client.ResourceRecord{}
+	} else {
+		log.Infof("Resource Record set for %s already exists", s.recordName)
+		currentResourceRecords = currentResourceRecordSet.ResourceRecords
+	}
+
+	newResourceRecords := editResourceRecords(add, currentResourceRecords, srv)
+
+	if !resourceRecordsDiffer(currentResourceRecords, newResourceRecords) {
+		log.Infof("Skipped update, no change needed.")
+	} else {
+		resourceRecordSet := &route53Client.ResourceRecordSet{
 			TTL:  aws.Int64(int64(s.ttl)),
 			Name: aws.String(s.recordName),
 			Type: aws.String("SRV"),
 		}
-	}
 
-	newResourceRecords := editResourceRecords(add, resourceRecordSet.ResourceRecords, srv)
+		var action string
 
-	if !resourceRecordsDiffer(resourceRecordSet.ResourceRecords, newResourceRecords) {
-		log.Infof("skipped update, no change needed.")
-	} else {
-		resourceRecordSet.ResourceRecords = newResourceRecords
+		if len(newResourceRecords) > 0 {
+			action = route53Client.ChangeActionUpsert
+			resourceRecordSet.ResourceRecords = newResourceRecords
+		} else {
+			action = route53Client.ChangeActionDelete
+			// NOTE: in order to delete the right record not only Name has to match
+			//       but also the Value of that record
+			resourceRecordSet.ResourceRecords = currentResourceRecords
+		}
 
-		_, err := s.client.ChangeRecord(s.hostedZoneID, route53Client.ChangeActionUpsert, resourceRecordSet)
+		log.Infof("%s record(s): %+v", action, resourceRecordSet.ResourceRecords)
+		_, err := s.client.ChangeRecord(s.hostedZoneID, action, resourceRecordSet)
 		if err != nil {
 			return err
 		}
