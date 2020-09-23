@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -16,6 +17,8 @@ import (
 	checker "github.com/zinfra/srv-announcer/checker"
 	tcpHealthcheck "github.com/zinfra/srv-announcer/checker/healthchecks/tcp"
 	config "github.com/zinfra/srv-announcer/config"
+	dns "github.com/zinfra/srv-announcer/dns"
+	dummy "github.com/zinfra/srv-announcer/dns/dummy"
 	route53 "github.com/zinfra/srv-announcer/dns/route53"
 )
 
@@ -46,7 +49,6 @@ func main() {
 			Usage:       "Name of the Route53 Zone the records to manage are in",
 			EnvVars:     []string{"SRV_ANNOUNCER_ZONE_NAME"},
 			Destination: &config.ZoneName,
-			Required:    true,
 		},
 		&cli.StringFlag{
 			Name:        "srv-record-name",
@@ -132,17 +134,26 @@ func main() {
 		}
 		config.CheckTarget = checkTarget
 
-		// initialize route53
-		r53 := route53.NewClient()
+		var srvRecordManager dns.ISRVManager
+		if config.DryRun {
+			srvRecordManager = &dummy.SrvManager{}
+		} else {
+			// ensure config.ZoneName is set
+			if config.ZoneName == "" {
+				return errors.New("Zone name needs to be specified")
+			}
+			// initialize route53
+			r53 := route53.NewClient()
 
-		//lookup zone
-		hostedZone, err := r53.GetZoneByName(config.ZoneName)
-		if err != nil {
-			return err
+			// lookup zone
+			hostedZone, err := r53.GetZoneByName(config.ZoneName)
+			if err != nil {
+				return err
+			}
+			zoneID := aws.StringValue(hostedZone.Id)
+
+			srvRecordManager = route53.NewSRVManager(r53, zoneID, config.SRVRecordName, config.TTL)
 		}
-		zoneID := aws.StringValue(hostedZone.Id)
-
-		srvRecordManager := route53.NewSRVManager(r53, zoneID, config.SRVRecordName, config.TTL, config.DryRun)
 
 		tcpHealthcheck := tcpHealthcheck.NewHealthcheck(config.CheckTarget, config.CheckTimeout, config.CheckInterval)
 
