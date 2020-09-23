@@ -1,6 +1,9 @@
 package route53
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	awsSession "github.com/aws/aws-sdk-go/aws/session"
 	route53Client "github.com/aws/aws-sdk-go/service/route53"
@@ -69,4 +72,28 @@ func (c *Client) GetResourceRecordSetByName(zoneID, recordName, recordType strin
 	}
 
 	return resp.ResourceRecordSets[0], nil
+}
+
+// ChangeRecord creates, updates or deletes a record depending on the given ChangeAction
+func (c *Client) ChangeRecord(zoneID, action string, recordSet *route53Client.ResourceRecordSet) (*route53Client.ChangeInfo, error) {
+	recordName := addDotSuffixIfNeeded(*recordSet.Name)
+
+	recordSet.Name = aws.String(recordName)
+
+	recordSetInput := &route53Client.ChangeResourceRecordSetsInput{
+		HostedZoneId: aws.String(zoneID),
+		ChangeBatch: &route53Client.ChangeBatch{
+			Comment: aws.String(fmt.Sprintf("Updated automatically on %s", time.Now().Format(time.RFC3339))),
+			Changes: []*route53Client.Change{{
+				Action:            aws.String(action),
+				ResourceRecordSet: recordSet,
+			}},
+		},
+	}
+
+	res, err := c.Service.ChangeResourceRecordSets(recordSetInput)
+	if err != nil {
+		return nil, err
+	}
+	return res.ChangeInfo, nil
 }

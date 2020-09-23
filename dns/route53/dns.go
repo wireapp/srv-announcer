@@ -1,9 +1,7 @@
 package route53
 
 import (
-	"fmt"
 	"net"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	route53Client "github.com/aws/aws-sdk-go/service/route53"
@@ -56,18 +54,7 @@ func (s *SRVManager) edit(add bool, srv *net.SRV) error {
 	} else {
 		resourceRecordSet.ResourceRecords = newResourceRecords
 
-		recordSetInput := &route53Client.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(s.hostedZoneID),
-			ChangeBatch: &route53Client.ChangeBatch{
-				Comment: aws.String(fmt.Sprintf("Updated automatically on %s", time.Now().Format(time.RFC3339))),
-				Changes: []*route53Client.Change{{
-					Action:            aws.String(route53Client.ChangeActionUpsert),
-					ResourceRecordSet: resourceRecordSet,
-				}},
-			},
-		}
-
-		_, err := s.client.Service.ChangeResourceRecordSets(recordSetInput)
+		_, err := s.client.ChangeRecord(s.hostedZoneID, route53Client.ChangeActionUpsert, resourceRecordSet)
 		if err != nil {
 			return err
 		}
