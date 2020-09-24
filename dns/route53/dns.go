@@ -32,7 +32,7 @@ func NewSRVManager(client *Client, hostedZoneID string, recordName string, ttl u
 
 // edit provides both add and removal capabilities
 func (s *SRVManager) edit(add bool, srv *net.SRV) error {
-	log.Infof("Looking up SRV resource record set for %s", s.recordName)
+	log.Debugf("Looking up SRV resource record set for %s", s.recordName)
 	currentResourceRecordSet, err := s.client.GetResourceRecordSetByName(s.hostedZoneID, s.recordName, "SRV")
 	if err != nil {
 		return err
@@ -41,17 +41,17 @@ func (s *SRVManager) edit(add bool, srv *net.SRV) error {
 	var currentResourceRecords []*route53Client.ResourceRecord
 
 	if currentResourceRecordSet == nil {
-		log.Infof("Resource Record set for %s doesn't exist", s.recordName)
+		log.Debugf("Resource Record set for %s doesn't exist", s.recordName)
 		currentResourceRecords = []*route53Client.ResourceRecord{}
 	} else {
-		log.Infof("Resource Record set for %s already exists", s.recordName)
+		log.Debugf("Resource Record set for %s already exists", s.recordName)
 		currentResourceRecords = currentResourceRecordSet.ResourceRecords
 	}
 
 	newResourceRecords := editResourceRecords(add, currentResourceRecords, srv)
 
 	if !resourceRecordsDiffer(currentResourceRecords, newResourceRecords) {
-		log.Infof("Skipped update, no change needed.")
+		log.Debugf("Skipped update, no change needed.")
 	} else {
 		resourceRecordSet := &route53Client.ResourceRecordSet{
 			TTL:  aws.Int64(int64(s.ttl)),
@@ -71,7 +71,8 @@ func (s *SRVManager) edit(add bool, srv *net.SRV) error {
 			resourceRecordSet.ResourceRecords = currentResourceRecords
 		}
 
-		log.Infof("%s record(s): %+v", action, resourceRecordSet.ResourceRecords)
+		log.Infof("%s record %+v", action, srv)
+		log.Tracef("Full record set: %+v", resourceRecordSet.ResourceRecords)
 		_, err := s.client.ChangeRecord(s.hostedZoneID, action, resourceRecordSet)
 		if err != nil {
 			return err
