@@ -48,7 +48,8 @@ func (hc *Healthcheck) Run(ctx context.Context, healthyChan chan<- bool) {
 				healthyChan <- false
 				continue
 			}
-			defer conn.Close()
+			// don't defer, close immediately
+			conn.Close()
 			log.Infof("%s is reachable", hc.target)
 			healthyChan <- true
 		}
