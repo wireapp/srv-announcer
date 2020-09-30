@@ -13,15 +13,19 @@ func ParseSRV(rrText string) (*net.SRV, error) {
 	if len(fields) != 4 {
 		return nil, fmt.Errorf("number of fields != 4 in %s", rrText)
 	}
-
-	// parse fields
-	var err error
-
-	priority, err := strconv.ParseUint(fields[0], 10, 16)
-	weight, err := strconv.ParseUint(fields[1], 10, 16)
-	port, err := strconv.ParseUint(fields[2], 10, 16)
 	target := fields[3]
 
+	priority, err := strconv.ParseUint(fields[0], 10, 16)
+	if err != nil {
+		return nil, err
+	}
+
+	weight, err := strconv.ParseUint(fields[1], 10, 16)
+	if err != nil {
+		return nil, err
+	}
+
+	port, err := strconv.ParseUint(fields[2], 10, 16)
 	if err != nil {
 		return nil, err
 	}
