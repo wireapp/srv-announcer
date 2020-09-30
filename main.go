@@ -23,14 +23,9 @@ import (
 )
 
 func main() {
-	// configure logging
-	log.SetFormatter(&log.TextFormatter{})
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.DebugLevel)
-
 	var config config.Config
 	config.SRVRecord = &net.SRV{}
-	var checkTarget string
+	var checkTarget, logLevelStr string
 	var TTL, srvPort, srvPriority, srvWeight uint
 
 	app := cli.NewApp()
@@ -38,6 +33,14 @@ func main() {
 	app.Usage = "Sidecar managing DNS records in an SRV record set (RFC2782), a poormans alternative to proper service discovery"
 
 	app.Flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:        "log-level",
+			Aliases:     []string{"l"},
+			Usage:       "The level at which to log (trace|debug|info|warn|error|fatal|panic), defaults to info",
+			EnvVars:     []string{"SRV_ANNOUNCER_LOG_LEVEL"},
+			Destination: &logLevelStr,
+			Value:       "info",
+		},
 		&cli.BoolFlag{
 			Name:        "dry-run",
 			Usage:       "Don't actually update DNS, only log what would be done",
@@ -116,6 +119,17 @@ func main() {
 	}
 
 	app.Action = func(ctx *cli.Context) error {
+		// configure logging
+		logLevel, err := log.ParseLevel(logLevelStr)
+		if err != nil {
+			log.Errorf("Unable to parse log level: %s", err.Error())
+			return err
+		}
+		log.SetLevel(logLevel)
+		log.SetFormatter(&log.TextFormatter{})
+		log.SetOutput(os.Stdout)
+
+
 		// there's no uint16flag, so scan into uint and convert here.
 		config.TTL = uint16(TTL)
 		config.SRVRecord.Port = uint16(srvPort)

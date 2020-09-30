@@ -18,7 +18,7 @@ type SrvManager struct {
 
 // Add adds the record to the record set if it doesn't already exist
 func (s *SrvManager) Add(srv *net.SRV) error {
-	log.Info("add called")
+	log.Debug("Add called")
 	// if that record is in the set already, we're done
 	for _, aSrv := range s.SrvRecordSet {
 		if aSrv.Port == srv.Port && aSrv.Priority == srv.Priority &&
@@ -35,13 +35,13 @@ func (s *SrvManager) Add(srv *net.SRV) error {
 
 // Remove removes the record to the record set if it exists
 func (s *SrvManager) Remove(srv *net.SRV) error {
-	log.Info("remove called")
+	log.Debug("Remove called")
 	newRecordSet := make([]net.SRV, 0)
 	for _, aSrv := range s.SrvRecordSet {
 		// if that record is in the set already, remove it, else copy it over
 		if aSrv.Port == srv.Port && aSrv.Priority == srv.Priority &&
 			aSrv.Target == srv.Target && aSrv.Weight == aSrv.Weight {
-			log.Debugf("Removing record %+v from list", aSrv)
+			log.Infof("Removing record %+v from list", aSrv)
 		} else {
 			newRecordSet = append(newRecordSet, aSrv)
 		}
