@@ -1,4 +1,4 @@
-name: 'Creating a releasing with assets'
+name: 'Creating a release with assets'
 
 on:
   push:
